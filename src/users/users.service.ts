@@ -1,4 +1,59 @@
+// import { Request, Response, NextFunction } from 'express'
+import { IUser } from '@/interface/users.interface'
+import { Token, User } from '@/schemas/schemas'
+import bcrypt from 'bcrypt'
+import { v4 as uuidv4 } from 'uuid'
+import jwt from 'jsonwebtoken'
+
 export class UsersService {
-  async auth() {}
-  async registration() {}
+  async login() {}
+  async registration(username: string, email: string, password: string) {
+    const candidate = await User.findOne({ email: email })
+    if (candidate) {
+      throw new Error('User with this email no exist')
+    }
+    const hashPassword = await bcrypt.hash(password, 3)
+    const activationLink = uuidv4()
+    const newUser = await User.create({
+      username,
+      email,
+      password: hashPassword,
+      activationLink: activationLink,
+    })
+    await this.sendActivationMail(email, activationLink)
+    const tokens = this.generateTokens({
+      userId: newUser.id,
+    })
+    await this.saveToken(newUser.id, tokens.refreshToken)
+    return {
+      ...tokens,
+    }
+  }
+  async logout() {}
+  private async sendActivationMail(to: string, activationLink: string) {}
+  private generateTokens(payload: {}) {
+    const SECRET = process.env.SECRET
+    if (!SECRET) {
+      throw new Error('No secret key')
+    }
+    const accessToken = jwt.sign(payload, SECRET, {
+      expiresIn: '30m',
+    })
+    const refreshToken = jwt.sign(payload, SECRET, {
+      expiresIn: '30d',
+    })
+    return {
+      accessToken,
+      refreshToken,
+    }
+  }
+  private async saveToken(userId: number, refreshToken: string) {
+    const tokenData = await Token.findOne({ user: userId })
+    if (tokenData) {
+      tokenData.refreshToken = refreshToken
+      return tokenData.save()
+    }
+    const token = await Token.create({ userId, refreshToken })
+    return token
+  }
 }

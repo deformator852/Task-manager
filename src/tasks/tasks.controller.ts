@@ -32,3 +32,5 @@ router.get('/', async (req: Request, res: Response) => {
     res.status(403).send({ error: 'no user id' })
   }
 })
+
+export const tasksRouter = router

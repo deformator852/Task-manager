@@ -6,7 +6,7 @@ import parser from '@typescript-eslint/parser'
 
 export default [
   {
-    files: ['**/*.ts','**/*.js'],
+    files: ['**/*.ts', '**/*.js'],
     languageOptions: {
       parser: parser, // Указываем правильный парсер
       parserOptions: {
@@ -19,7 +19,7 @@ export default [
       'eslint-plugin-js': pluginJs,
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': 'warn',
+      // '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       'import/no-commonjs': 'off',
       'node/no-unsupported-features/es-syntax': 'off',

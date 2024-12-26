@@ -1,4 +1,4 @@
-import mongoose, { mongo } from 'mongoose'
+import mongoose, { mongo, Schema } from 'mongoose'
 
 const TaskSchema = new mongoose.Schema({
   name: {
@@ -19,7 +19,7 @@ const TaskSchema = new mongoose.Schema({
     required: true,
     default: false,
   },
-  user: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
+  user: { type: mongoose.Schema.ObjectId, ref: 'User' },
 })
 
 const UserSchema = new mongoose.Schema({
@@ -42,7 +42,16 @@ const UserSchema = new mongoose.Schema({
     required: true,
     default: false,
   },
+  activationLink: {
+    type: String,
+    required: true,
+  },
 })
 
+const TokenSchema = new Schema({
+  user: { type: mongoose.Schema.ObjectId, ref: 'User' },
+  refreshToken: { type: String, required: true },
+})
+export const Token = mongoose.model('Token', TokenSchema)
 export const Task = mongoose.model('Task', TaskSchema)
 export const User = mongoose.model('User', UserSchema)
