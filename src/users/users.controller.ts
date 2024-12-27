@@ -17,6 +17,7 @@ router.post(
 )
 router.post('/registration/', async (req: Request, res: Response) => {
   try {
+    console.log(req.body)
     const { username, email, password } = req.body
     const tokens = await service.registration(username, email, password)
     res.cookie('refreshToken', tokens.refreshToken, {

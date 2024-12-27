@@ -4,13 +4,14 @@ import { Token, User } from '@/schemas/schemas'
 import bcrypt from 'bcrypt'
 import { v4 as uuidv4 } from 'uuid'
 import jwt from 'jsonwebtoken'
+import nodemailer from 'nodemailer'
 
 export class UsersService {
   async login() {}
   async registration(username: string, email: string, password: string) {
     const candidate = await User.findOne({ email: email })
     if (candidate) {
-      throw new Error('User with this email no exist')
+      throw new Error('User with this email exist')
     }
     const hashPassword = await bcrypt.hash(password, 3)
     const activationLink = uuidv4()
@@ -20,7 +21,10 @@ export class UsersService {
       password: hashPassword,
       activationLink: activationLink,
     })
-    await this.sendActivationMail(email, activationLink)
+    await this.sendActivationMail(
+      email,
+      `http://127.0.0.1:3200/api/activate/${activationLink}`
+    )
     const tokens = this.generateTokens({
       userId: newUser.id,
     })
@@ -30,7 +34,29 @@ export class UsersService {
     }
   }
   async logout() {}
-  private async sendActivationMail(to: string, activationLink: string) {}
+  private async sendActivationMail(to: string, activationLink: string) {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    })
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to,
+      subject: 'Activation http://127.0.0.1:3200/',
+      text: '',
+      html: `
+<div>
+  <h1>For activation follow by link</h1>
+  <a href='${activationLink}'>${activationLink}</a>
+</div>
+`,
+    })
+  }
   private generateTokens(payload: {}) {
     const SECRET = process.env.SECRET
     if (!SECRET) {
