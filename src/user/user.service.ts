@@ -6,8 +6,52 @@ import { v4 as uuidv4 } from 'uuid'
 import jwt from 'jsonwebtoken'
 import nodemailer from 'nodemailer'
 
-export class UsersService {
-  async login() {}
+export class UserService {
+  async login(username: string, password: string) {
+    const user = await User.findOne({ username })
+    if (!user) {
+      throw new Error('user with the such username not exist')
+    }
+    if (await bcrypt.compare(password, <string>user.password)) {
+      const accessToken = jwt.sign(
+        { userId: user.id },
+        <string>process.env.SECRET
+      )
+
+      return accessToken
+    } else {
+      throw new Error('Password not valid')
+    }
+  }
+  async logout(refreshToken: string) {
+    await User.deleteOne({ refreshToken })
+  }
+  refreshAccessToken(refreshToken: string) {
+    return new Promise((resolve, reject) => {
+      jwt.verify(
+        refreshToken,
+        <string>process.env.SECRET,
+        (err: any, user: any) => {
+          if (err) {
+            return reject(new Error('Invalid json token'))
+          }
+          const newAccessToken = jwt.sign(
+            { id: user.id },
+            <string>process.env.SECRET
+          )
+          resolve(newAccessToken)
+        }
+      )
+    })
+  }
+  async activate(activationLink: string) {
+    const user = await User.findOne({ activationLink })
+    if (!user) {
+      throw new Error('Activation link not working')
+    }
+    user.isEmailVerify = true
+    await user.save()
+  }
   async registration(username: string, email: string, password: string) {
     const candidate = await User.findOne({ email: email })
     if (candidate) {
@@ -23,7 +67,7 @@ export class UsersService {
     })
     await this.sendActivationMail(
       email,
-      `http://127.0.0.1:3200/api/activate/${activationLink}`
+      `http://127.0.0.1:3200/api/users/activate/${activationLink}`
     )
     const tokens = this.generateTokens({
       userId: newUser.id,
@@ -33,7 +77,6 @@ export class UsersService {
       ...tokens,
     }
   }
-  async logout() {}
   private async sendActivationMail(to: string, activationLink: string) {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,

@@ -52,6 +52,7 @@ const TokenSchema = new Schema({
   user: { type: mongoose.Schema.ObjectId, ref: 'User' },
   refreshToken: { type: String, required: true },
 })
+
 export const Token = mongoose.model('Token', TokenSchema)
 export const Task = mongoose.model('Task', TaskSchema)
 export const User = mongoose.model('User', UserSchema)

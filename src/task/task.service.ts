@@ -1,7 +1,7 @@
 import { ITask } from '@/interface/task.interface'
 import { Task } from '@/schemas/schemas'
 
-export class TasksService {
+export class TaskService {
   async createTasks(task: ITask, userId: number) {
     return await Task.create({ ...task, user: userId })
   }

@@ -1,9 +1,9 @@
 import { Request, Response, Router } from 'express'
-import { TasksService } from './tasks.service'
+import { TaskService } from './task.service'
 import { ITask } from '@/interface/task.interface'
 
 export const router = Router()
-const service = new TasksService()
+const service = new TaskService()
 router.post('/', async (req: Request, res: Response) => {
   const body: ITask = req.body
   if (body) {
