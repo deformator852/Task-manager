@@ -6,6 +6,7 @@ import { tasksRouter } from '@/task/task.controller'
 import { usersRouter } from '@/user/user.controller'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import { authMiddleware } from '@/middleware/auth.middleware'
 
 dotenv.config()
 const app = express()

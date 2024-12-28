@@ -4,6 +4,7 @@ import { UserService } from './user.service'
 import { Error, Mongoose } from 'mongoose'
 import jwt from 'jsonwebtoken'
 import { User } from '@/schemas/schemas'
+import { authMiddleware } from '@/middleware/auth.middleware'
 
 const router = Router()
 const service = new UserService()
@@ -79,7 +80,7 @@ router.get('/refresh/', async (req: Request, res: Response) => {
     res.status(404).send({ error: e.message })
   }
 })
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', authMiddleware, async (req: Request, res: Response) => {
   const users = await User.find({ isEmailVerify: true })
   res.send(users)
 })
