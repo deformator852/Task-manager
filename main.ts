@@ -19,8 +19,8 @@ async function main() {
   app.use(express.json())
   app.use(cookieParser())
   app.use(compression({ threshold: 1024 }))
-  app.use(PREFIX + '/tasks', tasksRouter)
-  app.use(PREFIX + '/users', usersRouter)
+  app.use(PREFIX + '/tasks', authMiddleware, tasksRouter)
+  app.use(PREFIX + '/user', usersRouter)
   app.listen(PORT, () => {
     console.log(`[✓]PORT ${PORT}[✓]`)
   })

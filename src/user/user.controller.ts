@@ -63,10 +63,12 @@ router.get('/activate/:link', async (req: Request, res: Response) => {
 })
 router.get('/refresh/', async (req: Request, res: Response) => {
   const refreshToken = req.cookies.refreshToken
+  const decoded = jwt.verify(refreshToken, <string>process.env.SECRET)
+  const userId = decoded.userId
   try {
     if (refreshToken) {
       service
-        .refreshAccessToken(refreshToken)
+        .refreshAccessToken(refreshToken, userId)
         .then((newAccessToken) => {
           res.status(200).send({ newAccessToken })
         })
@@ -74,15 +76,11 @@ router.get('/refresh/', async (req: Request, res: Response) => {
           res.status(404).send({ error: e.message })
         })
     } else {
-      res.status(401).send({ error: 'Refresh token is required' })
+      res.status(401).send({ error: "You aren't auth" })
     }
   } catch (e: any) {
     res.status(404).send({ error: e.message })
   }
-})
-router.get('/', authMiddleware, async (req: Request, res: Response) => {
-  const users = await User.find({ isEmailVerify: true })
-  res.send(users)
 })
 
 export const usersRouter = router

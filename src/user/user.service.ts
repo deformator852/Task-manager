@@ -26,18 +26,22 @@ export class UserService {
   async logout(refreshToken: string) {
     await User.deleteOne({ refreshToken })
   }
-  refreshAccessToken(refreshToken: string) {
+  refreshAccessToken(refreshToken: string, userId: string) {
     return new Promise((resolve, reject) => {
       jwt.verify(
         refreshToken,
         <string>process.env.SECRET,
-        (err: any, user: any) => {
+        async (err: any, user: any) => {
           if (err) {
             return reject(new Error('Invalid json token'))
           }
+          if ((await Token.findOne({ refreshToken })) === null) {
+            return reject(new Error('Not found refresh token in DB'))
+          }
           const newAccessToken = jwt.sign(
-            { id: user.id },
-            <string>process.env.SECRET
+            { userId },
+            <string>process.env.SECRET,
+            { expiresIn: '30d' }
           )
           resolve(newAccessToken)
         }
@@ -67,7 +71,7 @@ export class UserService {
     })
     await this.sendActivationMail(
       email,
-      `http://127.0.0.1:3200/api/users/activate/${activationLink}`
+      `http://127.0.0.1:3200/api/user/activate/${activationLink}`
     )
     const tokens = this.generateTokens({
       userId: newUser.id,
