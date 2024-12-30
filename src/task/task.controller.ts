@@ -1,6 +1,10 @@
 import { Request, Response, Router } from 'express'
 import { TaskService } from './task.service'
 import { ITask } from '@/interface/task.interface'
+import {
+  sendErrorResponse,
+  sendSuccessResponse,
+} from '@/utilities/utilities.responses'
 
 export const router = Router()
 const service = new TaskService()
@@ -17,14 +21,13 @@ router.patch(
       } else if (status === 'true') {
         status = true
       } else {
-        res.status(404).send({ error: 'invalid status' })
+        sendErrorResponse('invalid status', res)
         return
       }
       const result = await service.taskStatusChange(userId, taskId, status)
-      console.log(result)
-      res.status(200).send({ message: 'success' })
+      sendSuccessResponse({ message: 'success' }, res)
     } catch (e: any) {
-      res.status(404).send({ error: e.message })
+      sendErrorResponse(e.message, res)
     }
   }
 )
@@ -35,10 +38,10 @@ router.patch('/', async (req: Request, res: Response) => {
     const fields = <object>req.body
     if (userId && taskId && fields) {
       const updateResult = await service.updateOne(userId, taskId, fields)
-      res.status(200).send(updateResult)
+      sendSuccessResponse(updateResult, res)
     }
   } catch (e: any) {
-    res.status(404).send({ erorr: e.message })
+    sendErrorResponse(e.message, res)
   }
 })
 router.delete('/', async (req: Request, res: Response) => {
@@ -47,10 +50,10 @@ router.delete('/', async (req: Request, res: Response) => {
     const taskId = <string>req.query.task_id
     if (userId && taskId) {
       const deleteResult = await service.deleteOne(userId, taskId)
-      res.status(200).send(deleteResult)
+      sendSuccessResponse(deleteResult, res)
     }
   } catch (e: any) {
-    res.status(404).send({ erorr: e.message })
+    sendErrorResponse(e.message, res)
   }
 })
 
@@ -60,46 +63,49 @@ router.post('/', async (req: Request, res: Response) => {
     const userId = <string>req.user.userId
     try {
       if (!userId) {
-        res.status(403).send({ error: 'no user id' })
+        sendErrorResponse('no user id', res, 403)
         return
       }
-      //const refreshToken = req.cookies.refreshToken
-      //if (!(await service.userIdentify(userId, refreshToken))) {
-      //  res.status(403).send({ error: "can't identify user" })
-      //  return
-      //}
       await service.createTasks(body, userId)
-      res.status(200).send(body)
-    } catch (e) {
-      res.status(404).send({ error: e })
+      sendSuccessResponse(body, res)
+    } catch (e: any) {
+      sendErrorResponse(e.message, res)
     }
   } else {
-    res.status(404).send({ error: 'Empty body' })
+    sendErrorResponse('Empty body', res)
   }
 })
 
 router.get('/', async (req: Request, res: Response) => {
   const userId = <string>req.user.userId
+  const taskId = <string>req.query.task_id
+  const completedStatus = req.query.completed
   try {
-    if (userId) {
-      const taskId = <string>req.query.task_id
-      const completedStatus = req.query.completed
-      let result: [] | {} | null = null
-      if (taskId) {
-        result = await service.getOne(userId, taskId)
-        if (result === null) {
-          res.status(404).send({ error: "can't find task" })
-          return
-        }
-      } else {
-        result = await service.getAll(userId, completedStatus)
-      }
-      res.status(200).send(result)
-    } else {
-      res.status(403).send({ error: 'User id is absent' })
+    if (!userId) {
+      sendErrorResponse('User id is absent', res, 403)
+      return
     }
+    if (taskId) {
+      service
+        .getOne(userId, taskId)
+        .then((task) => {
+          sendSuccessResponse(task, res)
+        })
+        .catch(async (e: Error) => {
+          sendErrorResponse(e.message, res)
+        })
+      return
+    }
+    service
+      .getAll(userId, completedStatus)
+      .then((tasks) => {
+        sendSuccessResponse(tasks, res)
+      })
+      .catch((e: Error) => {
+        sendErrorResponse(e.message, res)
+      })
   } catch (e: any) {
-    res.status(404).send({ error: e.message })
+    sendErrorResponse(e.message, res)
   }
 })
 

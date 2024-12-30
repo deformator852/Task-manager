@@ -1,4 +1,3 @@
-// import { Request, Response, NextFunction } from 'express'
 import { IUser } from '@/interface/users.interface'
 import { Token, User } from '@/schemas/schemas'
 import bcrypt from 'bcrypt'

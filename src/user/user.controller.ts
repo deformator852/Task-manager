@@ -1,10 +1,10 @@
-import { Request, Response, Router, NextFunction } from 'express'
-import { IUser } from '@/interface/users.interface'
+import { Request, Response, Router } from 'express'
 import { UserService } from './user.service'
-import { Error, Mongoose } from 'mongoose'
 import jwt from 'jsonwebtoken'
-import { User } from '@/schemas/schemas'
-import { authMiddleware } from '@/middleware/auth.middleware'
+import {
+  sendErrorResponse,
+  sendSuccessResponse,
+} from '@/utilities/utilities.responses'
 
 const router = Router()
 const service = new UserService()
@@ -12,20 +12,20 @@ const service = new UserService()
 router.post('/login/', async (req: Request, res: Response) => {
   const { username, password } = req.body
   if (!username && password) {
-    res.status(403).send({ error: "empty body,can't auth" })
+    sendErrorResponse('empty body', res, 403)
     return
   }
   try {
     const accessToken = await service.login(username, password)
-    res.status(200).send({ accessToken })
+    sendSuccessResponse({ accessToken }, res)
   } catch (e: any) {
-    res.status(403).send({ error: e.message })
+    sendErrorResponse(e.message, res, 401)
   }
 })
 router.post('/logout/', async (req: Request, res: Response) => {
   const refreshToken = req.cookies.refreshToken
   if (!refreshToken) {
-    res.status(400).send({ message: 'Refresh token is required' })
+    sendErrorResponse('refresh token in required', res, 401)
     return
   }
   try {
@@ -34,9 +34,9 @@ router.post('/logout/', async (req: Request, res: Response) => {
       httpOnly: true,
       sameSite: 'strict',
     })
-    res.status(200).send({ message: 'success' })
+    sendSuccessResponse({ message: 'success' }, res)
   } catch (e: any) {
-    res.status(404).send({ error: e.message })
+    sendErrorResponse(e.message, res, 401)
   }
 })
 router.post('/registration/', async (req: Request, res: Response) => {
@@ -49,7 +49,7 @@ router.post('/registration/', async (req: Request, res: Response) => {
     })
     res.json(tokens)
   } catch (e: any) {
-    res.status(404).send({ error: e.message })
+    sendErrorResponse(e.message, res)
   }
 })
 
@@ -70,16 +70,16 @@ router.get('/refresh/', async (req: Request, res: Response) => {
       service
         .refreshAccessToken(refreshToken, userId)
         .then((newAccessToken) => {
-          res.status(200).send({ newAccessToken })
+          sendSuccessResponse({ newAccessToken }, res)
         })
         .catch((e: any) => {
-          res.status(404).send({ error: e.message })
+          sendErrorResponse(e.message, res)
         })
     } else {
-      res.status(401).send({ error: "You aren't auth" })
+      sendErrorResponse("you aren't auth", res, 401)
     }
   } catch (e: any) {
-    res.status(404).send({ error: e.message })
+    sendErrorResponse(e.message, res)
   }
 })
 
