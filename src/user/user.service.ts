@@ -126,7 +126,7 @@ export class UserService {
       tokenData.refreshToken = refreshToken
       return tokenData.save()
     }
-    const token = await Token.create({ userId, refreshToken })
+    const token = await Token.create({ user: userId, refreshToken })
     return token
   }
 }

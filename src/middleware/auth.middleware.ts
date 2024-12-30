@@ -15,8 +15,10 @@ export async function authMiddleware(
   const tokenWithoutPrefix = token.split(' ')[1]
   try {
     const decoded = jwt.verify(tokenWithoutPrefix, <string>process.env.SECRET)
-    // console.log(tokenWithoutPrefix)
-    console.log(decoded)
+    if (!decoded.userId) {
+      res.status(403).send({ error: 'invalid jwt token' })
+    }
+    //console.log(decoded.userId)
     req.user = decoded
     next()
   } catch (e: any) {
