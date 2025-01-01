@@ -3,6 +3,17 @@ import { CreateTaskDTO, TaskResponseDTO } from '@/DTO/task.dto'
 import mongoose from 'mongoose'
 
 export class TaskService {
+  getOverDueTasks(userId: string): Promise<TaskResponseDTO[]> {
+    return new Promise((resolve, reject) => {
+      Task.find({ _id: userId, overdue: true })
+        .then((tasks) => {
+          resolve(<TaskResponseDTO[]>tasks)
+        })
+        .catch(() => {
+          reject(new Error("Can't find tasks"))
+        })
+    })
+  }
   async taskStatusChange(userId: string, taskId: string, status: boolean) {
     return await Task.updateOne(
       { _id: userId, task: taskId },
@@ -23,7 +34,7 @@ export class TaskService {
       }
       Task.find(query)
         .then((tasks) => {
-          if (!tasks || tasks.length < 1) {
+          if (!tasks) {
             reject(new Error("can't find tasks"))
           }
           resolve(<TaskResponseDTO[]>tasks)

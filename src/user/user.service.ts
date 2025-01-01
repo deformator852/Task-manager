@@ -1,4 +1,3 @@
-import { IUser } from '@/interface/users.interface'
 import { Token, User } from '@/schemas/schemas'
 import bcrypt from 'bcrypt'
 import { v4 as uuidv4 } from 'uuid'
@@ -16,7 +15,6 @@ export class UserService {
         { userId: user.id },
         <string>process.env.SECRET
       )
-
       return accessToken
     } else {
       throw new Error('Password not valid')
@@ -27,24 +25,20 @@ export class UserService {
   }
   refreshAccessToken(refreshToken: string, userId: string) {
     return new Promise((resolve, reject) => {
-      jwt.verify(
-        refreshToken,
-        <string>process.env.SECRET,
-        async (err: any, user: any) => {
-          if (err) {
-            return reject(new Error('Invalid json token'))
-          }
-          if ((await Token.findOne({ refreshToken })) === null) {
-            return reject(new Error('Not found refresh token in DB'))
-          }
-          const newAccessToken = jwt.sign(
-            { userId },
-            <string>process.env.SECRET,
-            { expiresIn: '30d' }
-          )
-          resolve(newAccessToken)
+      jwt.verify(refreshToken, <string>process.env.SECRET, async (err: any) => {
+        if (err) {
+          return reject(new Error('Invalid json token'))
         }
-      )
+        if ((await Token.findOne({ refreshToken })) === null) {
+          return reject(new Error('Not found refresh token in DB'))
+        }
+        const newAccessToken = jwt.sign(
+          { userId },
+          <string>process.env.SECRET,
+          { expiresIn: '30d' }
+        )
+        resolve(newAccessToken)
+      })
     })
   }
   async activate(activationLink: string) {

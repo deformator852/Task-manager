@@ -1,4 +1,4 @@
-import { Response, Router } from 'express'
+import e, { Response, Router } from 'express'
 import { TaskService } from './task.service'
 import {
   sendErrorResponse,
@@ -10,7 +10,21 @@ import { CreateTaskDTO, TaskResponseDTO } from '@/DTO/task.dto'
 export const router = Router()
 const service = new TaskService()
 
-router.get('/overdue', async (req: AuthRequest, res: Response) => {})
+router.get('/overdue', async (req: AuthRequest, res: Response) => {
+  const userId = <string>req.userId
+  try {
+    service
+      .getOverDueTasks(userId)
+      .then((tasks) => {
+        sendSuccessResponse(tasks, res)
+      })
+      .catch((e) => {
+        sendErrorResponse(e.message, res)
+      })
+  } catch (e: any) {
+    sendErrorResponse(e.message, res)
+  }
+})
 router.patch(
   '/:task_id/completed/:status',
   async (req: AuthRequest, res: Response) => {
@@ -18,14 +32,12 @@ router.patch(
       const taskId = <string>req.params.task_id
       const userId = <string>req.userId
       let status: string | boolean = <string>req.params.status
-      if (status === 'false') {
-        status = false
-      } else if (status === 'true') {
-        status = true
+      if (status === 'true' || status === 'false') {
+        status = status === 'true' ? true : false
       } else {
         return sendErrorResponse('invalid status', res)
       }
-      const result = await service.taskStatusChange(userId, taskId, status)
+      await service.taskStatusChange(userId, taskId, status)
       sendSuccessResponse({ message: 'success' }, res)
     } catch (e: any) {
       sendErrorResponse(e.message, res)

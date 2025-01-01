@@ -1,21 +1,23 @@
 import { Request, Response, Router } from 'express'
 import { UserService } from './user.service'
-import jwt from 'jsonwebtoken'
+import jwt, { JwtPayload } from 'jsonwebtoken'
 import {
   sendErrorResponse,
   sendSuccessResponse,
 } from '@/utilities/utilities.responses'
+import { CreateUserDTO, LoginUserDTO } from '@/DTO/user.dto'
+import { CustomJwtPayload } from '@/interface/jwt.interface'
 
 const router = Router()
 const service = new UserService()
 
 router.post('/login/', async (req: Request, res: Response) => {
-  const { username, password } = req.body
-  if (!username && password) {
-    return sendErrorResponse('empty body', res, 403)
+  const user: LoginUserDTO = req.body
+  if (!user.username && user.password) {
+    return sendErrorResponse('empty body', res, 401)
   }
   try {
-    const accessToken = await service.login(username, password)
+    const accessToken = await service.login(user.username, user.password)
     sendSuccessResponse({ accessToken }, res)
   } catch (e: any) {
     sendErrorResponse(e.message, res, 401)
@@ -39,15 +41,19 @@ router.post('/logout/', async (req: Request, res: Response) => {
 })
 router.post('/registration/', async (req: Request, res: Response) => {
   try {
-    const { username, email, password } = req.body
-    const tokens = await service.registration(username, email, password)
+    const user: CreateUserDTO = req.body
+    const tokens = await service.registration(
+      user.username,
+      user.email,
+      user.password
+    )
     res.cookie('refreshToken', tokens.refreshToken, {
       maxAge: 30 * 24 * 60 * 60 * 1000,
       httpOnly: true,
     })
-    res.json(tokens)
+    sendSuccessResponse(tokens, res)
   } catch (e: any) {
-    sendErrorResponse(e.message, res)
+    sendErrorResponse(e.message, res, 401)
   }
 })
 
@@ -56,13 +62,21 @@ router.get('/activate/:link', async (req: Request, res: Response) => {
     await service.activate(req.params.link)
     return res.redirect(<string>process.env.CLIENT_URL)
   } catch (e: any) {
-    res.send({ error: e.message })
+    sendErrorResponse(e.message, res)
   }
 })
 router.get('/refresh/', async (req: Request, res: Response) => {
   const refreshToken = req.cookies.refreshToken
-  const decoded = jwt.verify(refreshToken, <string>process.env.SECRET)
+  if (!refreshToken) {
+    return sendErrorResponse('Absent refresh token', res)
+  }
+  const decoded = <CustomJwtPayload>(
+    jwt.verify(refreshToken, <string>process.env.SECRET)
+  )
   const userId = decoded.userId
+  if (!userId) {
+    return sendErrorResponse('invalid refresh token', res)
+  }
   try {
     if (refreshToken) {
       service

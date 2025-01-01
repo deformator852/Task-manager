@@ -19,6 +19,10 @@ const TaskSchema = new mongoose.Schema({
     required: true,
     default: false,
   },
+  overdue: {
+    type: Boolean,
+    default: false,
+  },
   user: { type: mongoose.Schema.ObjectId, ref: 'User' },
 })
 

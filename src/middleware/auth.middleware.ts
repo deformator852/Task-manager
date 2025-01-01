@@ -1,3 +1,5 @@
+import { User } from '@/schemas/schemas'
+import { sendErrorResponse } from '@/utilities/utilities.responses'
 import { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 
@@ -14,10 +16,18 @@ export async function authMiddleware(
   const tokenWithoutPrefix = token.split(' ')[1]
   try {
     const decoded = jwt.verify(tokenWithoutPrefix, <string>process.env.SECRET)
-    if (!decoded.userId) {
-      res.status(403).send({ error: 'invalid jwt token' })
+    const userId = <string>decoded.userId
+    if (!userId) {
+      return sendErrorResponse('invalud jwt token', res, 403)
     }
-    Object.assign(req, { userId: decoded.userId })
+    const user = await User.findById(userId)
+    if (!user) {
+      return sendErrorResponse('the such user no exist', res)
+    }
+    if (!user.isEmailVerify) {
+      return sendErrorResponse('your email is not verify', res)
+    }
+    Object.assign(req, { userId })
     next()
   } catch (e: any) {
     res.status(403).send({ error: e.message })
