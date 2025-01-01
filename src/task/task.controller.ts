@@ -1,28 +1,29 @@
-import { Request, Response, Router } from 'express'
+import { Response, Router } from 'express'
 import { TaskService } from './task.service'
-import { ITask } from '@/interface/task.interface'
 import {
   sendErrorResponse,
   sendSuccessResponse,
 } from '@/utilities/utilities.responses'
+import { AuthRequest } from '@/interface/request.interface'
+import { CreateTaskDTO, TaskResponseDTO } from '@/DTO/task.dto'
 
 export const router = Router()
 const service = new TaskService()
 
+router.get('/overdue', async (req: AuthRequest, res: Response) => {})
 router.patch(
   '/:task_id/completed/:status',
-  async (req: Request, res: Response) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const taskId = <string>req.params.task_id
-      const userId = <string>req.user.userId
+      const userId = <string>req.userId
       let status: string | boolean = <string>req.params.status
       if (status === 'false') {
         status = false
       } else if (status === 'true') {
         status = true
       } else {
-        sendErrorResponse('invalid status', res)
-        return
+        return sendErrorResponse('invalid status', res)
       }
       const result = await service.taskStatusChange(userId, taskId, status)
       sendSuccessResponse({ message: 'success' }, res)
@@ -31,9 +32,9 @@ router.patch(
     }
   }
 )
-router.patch('/', async (req: Request, res: Response) => {
+router.patch('/', async (req: AuthRequest, res: Response) => {
   try {
-    const userId = <string>req.user.userId
+    const userId = <string>req.userId
     const taskId = <string>req.query.task_id
     const fields = <object>req.body
     if (userId && taskId && fields) {
@@ -44,61 +45,59 @@ router.patch('/', async (req: Request, res: Response) => {
     sendErrorResponse(e.message, res)
   }
 })
-router.delete('/', async (req: Request, res: Response) => {
+router.delete('/:task_id', async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user.userId
-    const taskId = <string>req.query.task_id
+    const userId = req.userId
+    const taskId = <string>req.params.task_id
     if (userId && taskId) {
       const deleteResult = await service.deleteOne(userId, taskId)
-      sendSuccessResponse(deleteResult, res)
+      return sendSuccessResponse(deleteResult, res)
     }
+    sendErrorResponse('absent user id or task id', res)
   } catch (e: any) {
     sendErrorResponse(e.message, res)
   }
 })
 
-router.post('/', async (req: Request, res: Response) => {
-  const body: ITask = req.body
-  if (body) {
-    const userId = <string>req.user.userId
-    try {
-      if (!userId) {
-        sendErrorResponse('no user id', res, 403)
-        return
-      }
-      await service.createTasks(body, userId)
-      sendSuccessResponse(body, res)
-    } catch (e: any) {
-      sendErrorResponse(e.message, res)
+router.post('/', async (req: AuthRequest, res: Response) => {
+  const task: CreateTaskDTO = req.body
+  if (!task) {
+    return sendErrorResponse('Empty body', res)
+  }
+  const userId = <string>req.userId
+  try {
+    if (!userId) {
+      return sendErrorResponse('no user id', res, 403)
     }
-  } else {
-    sendErrorResponse('Empty body', res)
+    await service.createTasks(task, userId)
+    sendSuccessResponse(task, res)
+  } catch (e: any) {
+    sendErrorResponse(e.message, res)
   }
 })
 
-router.get('/', async (req: Request, res: Response) => {
-  const userId = <string>req.user.userId
+router.get('/', async (req: AuthRequest, res: Response) => {
+  const userId = <string>req.userId
   const taskId = <string>req.query.task_id
-  const completedStatus = req.query.completed
+  const completedStatus = <string>req.query.completed
   try {
     if (!userId) {
-      sendErrorResponse('User id is absent', res, 403)
-      return
+      return sendErrorResponse('User id is absent', res, 403)
     }
     if (taskId) {
       service
         .getOne(userId, taskId)
-        .then((task) => {
+        .then((task: TaskResponseDTO) => {
           sendSuccessResponse(task, res)
         })
-        .catch(async (e: Error) => {
+        .catch((e: Error) => {
           sendErrorResponse(e.message, res)
         })
       return
     }
     service
       .getAll(userId, completedStatus)
-      .then((tasks) => {
+      .then((tasks: TaskResponseDTO[]) => {
         sendSuccessResponse(tasks, res)
       })
       .catch((e: Error) => {
@@ -109,5 +108,4 @@ router.get('/', async (req: Request, res: Response) => {
   }
 })
 
-router.post
 export const tasksRouter = router

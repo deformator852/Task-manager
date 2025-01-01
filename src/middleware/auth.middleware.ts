@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
-import { decode } from 'querystring'
 
 export async function authMiddleware(
   req: Request,
@@ -18,8 +17,7 @@ export async function authMiddleware(
     if (!decoded.userId) {
       res.status(403).send({ error: 'invalid jwt token' })
     }
-    //console.log(decoded.userId)
-    req.user = decoded
+    Object.assign(req, { userId: decoded.userId })
     next()
   } catch (e: any) {
     res.status(403).send({ error: e.message })

@@ -12,8 +12,7 @@ const service = new UserService()
 router.post('/login/', async (req: Request, res: Response) => {
   const { username, password } = req.body
   if (!username && password) {
-    sendErrorResponse('empty body', res, 403)
-    return
+    return sendErrorResponse('empty body', res, 403)
   }
   try {
     const accessToken = await service.login(username, password)
@@ -25,8 +24,7 @@ router.post('/login/', async (req: Request, res: Response) => {
 router.post('/logout/', async (req: Request, res: Response) => {
   const refreshToken = req.cookies.refreshToken
   if (!refreshToken) {
-    sendErrorResponse('refresh token in required', res, 401)
-    return
+    return sendErrorResponse('refresh token in required', res, 401)
   }
   try {
     await service.logout(refreshToken)
