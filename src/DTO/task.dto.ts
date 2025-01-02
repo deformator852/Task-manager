@@ -12,3 +12,9 @@ export interface TaskResponseDTO {
   completed?: boolean
   deadline?: Date
 }
+
+export interface TaskStatsDTO {
+  completedTasks: number
+  overdueTasks: number
+  incompletedTasks: number
+}
